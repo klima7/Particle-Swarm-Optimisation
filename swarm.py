@@ -3,7 +3,7 @@ import numpy as np
 
 class PSOSolver:
 
-    def __init__(self, n_particles=100, w=1, v=1, c1=1, c2=1, max_iters=1000):
+    def __init__(self, n_particles=100, w=0.95, c1=0.25, c2=0.25, v=0.5, max_iters=1000):
         self.n_particles = n_particles
         self.w = np.broadcast_to(w, (n_particles,))
         self.v = np.broadcast_to(v, (n_particles,))
@@ -15,17 +15,21 @@ class PSOSolver:
         domain = np.array(domain)
         n_dim = domain.shape[0]
 
-        pos = self._random_positions(domain)
-        vel = self._random_velocities(n_dim)
-        lv = np.repeat(np.inf, self.n_particles)
-        lp = np.zeros((self.n_particles, n_dim))
-        gv = np.inf
-        gp = np.zeros((n_dim,))
+        pos = self._random_positions(domain)                    # particle positions
+        vel = self._random_velocities(n_dim)                    # particle velocities
+        inv = np.zeros((self.n_particles,), dtype=np.bool_)     # invalid particles (outside domain)
+        lv = np.repeat(np.inf, self.n_particles)                # local minimum values
+        lp = np.zeros((self.n_particles, n_dim))                # local minimum positions
+        gv = np.inf                                             # global minimum value
+        gp = np.zeros((n_dim,))                                 # global minimum position
 
         for i in range(self.max_iters):
-            lv, lp, gv, gp = self._get_minimums(lv, lp, gv, gp, fun, pos)
-            vel = self._update_velocities(pos, vel, lp, gp)
-            pos += vel
+
+            lv, lp, gv, gp = self._get_minimums(lv, lp, gv, gp, fun, pos, inv)
+            vel = self._get_new_velocities(pos, vel, lp, gp, inv)
+            pos = self._get_new_positions(pos, vel)
+            vel, inv = self._bounce_particles_outside_domain(pos, vel, domain)
+            print(sum(inv), end=' ')
 
         return gp, gv
 
@@ -46,9 +50,9 @@ class PSOSolver:
         scaled_directions = directions * scale_factors_transformed
         return scaled_directions
 
-    def _get_minimums(self, lv, lp, gv, gp, fun, pos):
+    def _get_minimums(self, lv, lp, gv, gp, fun, pos, inv):
         # calling function
-        values = self._get_function_values(fun, pos)
+        values = self._get_function_values(fun, pos, inv)
 
         # local minimums
         where_better = values < lv
@@ -65,10 +69,10 @@ class PSOSolver:
         return lv, lp, gv, gp
 
     @staticmethod
-    def _get_function_values(fun, pos):
-        return np.array([fun(args) for args in pos])
+    def _get_function_values(fun, pos, invalid_pos):
+        return np.array([fun(args) if not invalid else np.inf for args, invalid in zip(pos, invalid_pos)])
 
-    def _update_velocities(self, pos, vel, lp, gp):
+    def _get_new_velocities(self, pos, vel, lp, gp, inv):
         r1, r2 = np.random.rand(2)
         g_diff = gp - pos
         l_diff = lp - pos
@@ -76,4 +80,25 @@ class PSOSolver:
         local_term = l_diff * r1 * self.c1[..., None]
         global_term = g_diff * r2 * self.c2[..., None]
         new_vel = main_term + local_term + global_term
-        return new_vel
+        mixed_vel = np.where(np.repeat(inv[..., None], vel.shape[1], axis=1), vel, new_vel)
+        return mixed_vel
+
+    @staticmethod
+    def _get_new_positions(pos, vel):
+        return pos + vel
+
+    def _bounce_particles_outside_domain(self, pos, vel, domain):
+        invalid = np.zeros((self.n_particles,), dtype=np.bool_)
+        new_vel = vel.copy()
+
+        for dim, bounds in enumerate(domain):
+            lower_bound, upper_bound = bounds
+
+            # mark particles as invalid
+            dim_invalid = (pos[:, dim] < lower_bound) | (pos[:, dim] > upper_bound)
+            invalid |= dim_invalid
+
+            # flip particles velocities
+            new_vel[dim_invalid, dim] *= -1
+
+        return new_vel, invalid
