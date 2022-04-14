@@ -11,7 +11,7 @@ class PSOSolver:
         self.c2 = np.broadcast_to(c2, (n_particles,))
         self.max_iters = int(max_iters)
 
-    def solve(self, fun, domain):
+    def solve(self, fun, domain, *, callback=None):
         domain = np.array(domain)
         n_dim = domain.shape[0]
 
@@ -29,7 +29,10 @@ class PSOSolver:
             vel = self._get_new_velocities(pos, vel, lp, gp, inv)
             pos = self._get_new_positions(pos, vel)
             vel, inv = self._bounce_particles_outside_domain(pos, vel, domain)
-            print(sum(inv), end=' ')
+            # print(sum(inv), end=' ')
+
+            if callback:
+                callback(gp, gv, pos)
 
         return gp, gv
 
