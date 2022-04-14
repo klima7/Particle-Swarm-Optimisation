@@ -23,6 +23,7 @@ class PSOSolver:
 
         for i in range(100):
             lv, lp, gv, gp = self._get_minimums(lv, lp, gv, gp, fun, pos)
+            vel = self._update_velocities(pos, vel, lp, gp)
 
         return 0
 
@@ -65,3 +66,12 @@ class PSOSolver:
     def _get_function_values(fun, pos):
         return np.array([fun(args) for args in pos])
 
+    def _update_velocities(self, pos, vel, lp, gp):
+        r1, r2 = np.random.rand(2)
+        g_diff = gp - pos
+        l_diff = lp - pos
+        main_term = pos * self.w[..., None]
+        local_term = l_diff * r1 * self.c1[..., None]
+        global_term = g_diff * r2 * self.c2[..., None]
+        new_vel = main_term + local_term + global_term
+        return new_vel
