@@ -12,23 +12,38 @@ def fun(vec):
     return result
 
 
-if __name__ == '__main__':
+def test(solver):
 
     fig, ax = plt.subplots()
     ax.axis([-4.5, 4.5, -4.5, 4.5])
     sc = ax.scatter([], [], marker='o')
     ax.set_title('Particles')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    annotation = plt.annotate(
+        "minimum",
+        xy=(-4, -4),
+        ha="center",
+        arrowprops=dict(facecolor='black', shrink=0.1, width=2),
+        fontsize=12,
+    )
 
     def update_plot(best_arg, best_value, pos):
         x = [p[0] for p in pos]
         y = [p[1] for p in pos]
         sc.set_offsets(np.c_[x, y])
+        annotation.xy = best_arg
+        annotation.set_position(best_arg - np.array([2, -2]))
         plt.draw()
         plt.pause(0.05)
 
     np.random.seed(42)
-    solver = PSOSolver()
     domain = [[-4.5, 4.5], [-4.5, 4.5]]
     arg, val = solver.solve(fun, domain, callback=update_plot)
-    print(f'Arguments: {arg}')
-    print(f'Value    : {val}')
+
+    print(f'Args: {arg}; Value: {val}')
+
+
+if __name__ == '__main__':
+    solver = PSOSolver()
+    test(solver)
