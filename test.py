@@ -15,5 +15,6 @@ if __name__ == '__main__':
     np.random.seed(42)
     solver = PSOSolver()
     domain = [[-4.5, 4.5], [-4.5, 4.5]]
-    solution = solver.solve(fun, domain)
-    print(f'Solution: {solution}')
+    arg, val = solver.solve(fun, domain)
+    print(f'Arguments: {arg}')
+    print(f'Value    : {val}')

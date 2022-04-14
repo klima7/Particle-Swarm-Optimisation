@@ -3,12 +3,13 @@ import numpy as np
 
 class PSOSolver:
 
-    def __init__(self, n_particles=100, w=1, v=1, c1=1, c2=1):
+    def __init__(self, n_particles=100, w=1, v=1, c1=1, c2=1, max_iters=1000):
         self.n_particles = n_particles
         self.w = np.broadcast_to(w, (n_particles,))
         self.v = np.broadcast_to(v, (n_particles,))
         self.c1 = np.broadcast_to(c1, (n_particles,))
         self.c2 = np.broadcast_to(c2, (n_particles,))
+        self.max_iters = int(max_iters)
 
     def solve(self, fun, domain):
         domain = np.array(domain)
@@ -21,11 +22,12 @@ class PSOSolver:
         gv = np.inf
         gp = np.zeros((n_dim,))
 
-        for i in range(100):
+        for i in range(self.max_iters):
             lv, lp, gv, gp = self._get_minimums(lv, lp, gv, gp, fun, pos)
             vel = self._update_velocities(pos, vel, lp, gp)
+            pos += vel
 
-        return 0
+        return gp, gv
 
     def _random_positions(self, domain):
         dims_pos = []
@@ -70,7 +72,7 @@ class PSOSolver:
         r1, r2 = np.random.rand(2)
         g_diff = gp - pos
         l_diff = lp - pos
-        main_term = pos * self.w[..., None]
+        main_term = vel * self.w[..., None]
         local_term = l_diff * r1 * self.c1[..., None]
         global_term = g_diff * r2 * self.c2[..., None]
         new_vel = main_term + local_term + global_term
