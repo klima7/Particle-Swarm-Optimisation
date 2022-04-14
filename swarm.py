@@ -3,18 +3,20 @@ import numpy as np
 
 class PSOSolver:
 
-    def __init__(self, n_particles=100, w=0.95, c1=0.25, c2=0.25, v=0.5, max_iters=1000):
+    def __init__(self, n_particles=100, w=0.95, c1=0.25, c2=0.25, v=0.5, max_iters=1000, tol=1e-3):
         self.n_particles = n_particles
         self.w = np.broadcast_to(w, (n_particles,))
         self.v = np.broadcast_to(v, (n_particles,))
         self.c1 = np.broadcast_to(c1, (n_particles,))
         self.c2 = np.broadcast_to(c2, (n_particles,))
         self.max_iters = int(max_iters)
+        self.tol = tol
 
     def solve(self, fun, domain, *, callback=None):
         domain = np.array(domain)
         n_dim = domain.shape[0]
 
+        # state variables
         pos = self._random_positions(domain)                    # particle positions
         vel = self._random_velocities(n_dim)                    # particle velocities
         inv = np.zeros((self.n_particles,), dtype=np.bool_)     # invalid particles (outside domain)
@@ -25,12 +27,17 @@ class PSOSolver:
 
         for i in range(self.max_iters):
 
+            # updating state
             lv, lp, gv, gp = self._get_minimums(lv, lp, gv, gp, fun, pos, inv)
             vel = self._get_new_velocities(pos, vel, lp, gp, inv)
             pos = self._get_new_positions(pos, vel)
             vel, inv = self._bounce_particles_outside_domain(pos, vel, domain)
-            # print(sum(inv), end=' ')
 
+            # early stop
+            if self._early_stop(pos, gp):
+                break
+
+            # optional callback
             if callback:
                 callback(gp, gv, pos)
 
@@ -105,3 +112,11 @@ class PSOSolver:
             new_vel[dim_invalid, dim] *= -1
 
         return new_vel, invalid
+
+    def _early_stop(self, pos, gp):
+        if self.tol is None:
+            return
+        diffs = pos - gp
+        distances = np.sqrt(diffs[:, 0] ** 2 + diffs[:, 1] ** 2)
+        acceptable = distances < self.tol
+        return np.all(acceptable)
