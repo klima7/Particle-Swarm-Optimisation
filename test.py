@@ -1,3 +1,4 @@
+import numpy as np
 from swarm import PSOSolver
 
 
@@ -11,6 +12,7 @@ def fun(vec):
 
 
 if __name__ == '__main__':
+    np.random.seed(42)
     solver = PSOSolver()
     domain = [[-4.5, 4.5], [-4.5, 4.5]]
     solution = solver.solve(fun, domain)
