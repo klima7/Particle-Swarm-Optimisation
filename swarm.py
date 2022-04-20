@@ -3,7 +3,7 @@ import numpy as np
 
 class PSOSolver:
 
-    def __init__(self, n_particles=100, w=0.95, c1=0.25, c2=0.25, v=0.5, max_iters=1000, tol=1e-3):
+    def __init__(self, n_particles=100, w=0.95, c1=0.25, c2=0.25, v=0.5, max_iters=1000, tol=1e-3, n_tol=0.7):
         self.n_particles = n_particles
         self.w = np.broadcast_to(w, (n_particles,))
         self.v = np.broadcast_to(v, (n_particles,))
@@ -11,6 +11,7 @@ class PSOSolver:
         self.c2 = np.broadcast_to(c2, (n_particles,))
         self.max_iters = int(max_iters)
         self.tol = tol
+        self.n_tol = n_tol if isinstance(n_tol, int) else n_tol * n_particles
 
     def solve(self, fun, domain, *, callback=None):
         domain = np.array(domain)
@@ -119,4 +120,5 @@ class PSOSolver:
         diffs = pos - gp
         distances = np.sqrt(diffs[:, 0] ** 2 + diffs[:, 1] ** 2)
         acceptable = distances < self.tol
-        return np.all(acceptable)
+        acceptable_count = np.sum(acceptable)
+        return acceptable_count >= self.n_tol

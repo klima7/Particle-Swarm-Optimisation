@@ -61,12 +61,12 @@ def plot_background(ax, fun, domain):
 if __name__ == '__main__':
 
     # solver with equal parameters
-    solver_1 = PSOSolver(n_particles=100, w=0.9, c1=0.25, c2=0.25, v=0.5)
+    solver_1 = PSOSolver(n_particles=100, w=0.88, c1=0.25, c2=0.25, v=0.5)
 
     # solver with randomized parameters
     w = np.random.uniform(0.90, 0.95, (100,))
     c1 = np.random.uniform(0.1, 0.2, (100,))
     c2 = np.random.uniform(0.1, 0.2, (100,))
-    solver_2 = PSOSolver(n_particles=100, w=w, c1=c1, c2=c1, v=0.5)
+    solver_2 = PSOSolver(n_particles=100, w=w, c1=c1, c2=c1, v=0.5, max_iters=1000, tol=1e-3, n_tol=0.7)
 
-    test(solver_2)
+    test(solver_1)
